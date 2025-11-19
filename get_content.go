@@ -25,3 +25,20 @@ func getH1FromHTML(html string) string {
 
 	return output
 }
+
+func getFirstParagraphFromHTML(html string) string {
+	reader := strings.NewReader(html)
+
+	doc, err := goquery.NewDocumentFromReader(reader)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// if main exists, get the first p in it
+	if doc.Find("main").Length() > 0 {
+		return doc.Find("main").Find("p").First().Contents().Text()
+	}
+
+	// fallback to find the first p, if main doesn't exist
+	return doc.Find("p").First().Contents().Text()
+}
