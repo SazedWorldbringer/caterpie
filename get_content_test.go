@@ -158,19 +158,21 @@ func TestGetURLsFromHTML(t *testing.T) {
 	}
 
 	for i, tc := range tests {
-		baseURL, err := url.Parse(tc.inputURL)
-		if err != nil {
-			t.Errorf("couldn't parse input URL: %v", err)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			baseURL, err := url.Parse(tc.inputURL)
+			if err != nil {
+				t.Errorf("couldn't parse input URL: %v", err)
+			}
 
-		actual, err := getURLsFromHTML(tc.inputHTML, baseURL)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
+			actual, err := getURLsFromHTML(tc.inputHTML, baseURL)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
-		if !reflect.DeepEqual(actual, tc.expected) {
-			t.Errorf("Test %v - '%s' FAIL: \nexpected: %v, \nactual: %v", i, tc.name, tc.expected, actual)
-		}
+			if !reflect.DeepEqual(actual, tc.expected) {
+				t.Errorf("Test %v - '%s' FAIL: \nexpected: %v, \nactual: %v", i, tc.name, tc.expected, actual)
+			}
+		})
 	}
 }
 
@@ -226,18 +228,20 @@ func TestGetImagesFromHTML(t *testing.T) {
 	}
 
 	for i, tc := range tests {
-		baseURL, err := url.Parse(tc.inputURL)
-		if err != nil {
-			t.Errorf("couldn't parse input URL: %v", err)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			baseURL, err := url.Parse(tc.inputURL)
+			if err != nil {
+				t.Errorf("couldn't parse input URL: %v", err)
+			}
 
-		actual, err := getImagesFromHTML(tc.inputHTML, baseURL)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
+			actual, err := getImagesFromHTML(tc.inputHTML, baseURL)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
-		if !reflect.DeepEqual(actual, tc.expected) {
-			t.Errorf("Test %v - '%s' FAIL: \nexpected: %v, \nactual: %v", i, tc.name, tc.expected, actual)
-		}
+			if !reflect.DeepEqual(actual, tc.expected) {
+				t.Errorf("Test %v - '%s' FAIL: \nexpected: %v, \nactual: %v", i, tc.name, tc.expected, actual)
+			}
+		})
 	}
 }
