@@ -173,3 +173,71 @@ func TestGetURLsFromHTML(t *testing.T) {
 		}
 	}
 }
+
+func TestGetImagesFromHTML(t *testing.T) {
+	tests := []struct {
+		name      string
+		inputURL  string
+		inputHTML string
+		expected  []string
+	}{
+		{
+			name:      "single url, not relative",
+			inputURL:  "https://labex.io",
+			inputHTML: `<div class="overflow-hidden cover course undefined"><img src="https://cover-creator.labex.io/project-transparent-modification-of-http-requests.png" width="525" height="270" alt="Transparent Modification of HTTP Requests" srcset="https://cover-creator.labex.io/project-transparent-modification-of-http-requests.png 1x, https://cover-creator.labex.io/project-transparent-modification-of-http-requests.png 2x" class="w-full h-auto"></div>`,
+			expected:  []string{"https://cover-creator.labex.io/project-transparent-modification-of-http-requests.png"},
+		},
+		{
+			name:      "single image, relative",
+			inputURL:  "https://blog.boot.dev",
+			inputHTML: `<html><body><img src="/logo.png" alt="Logo"></body></html>`,
+			expected:  []string{"https://blog.boot.dev/logo.png"},
+		},
+		{
+			name:     "multiple urls, not relative",
+			inputURL: "https://gobyexample.com/",
+			inputHTML: `<div>
+					<p class="next">
+						Next example: <img src="https://gobyexample.com/constants" rel="next">.
+					</p>
+					<p class="footer">
+						by <img src="https://markmcgranaghan.com"> and <img src="https://eli.thegreenplace.net"> | <img src="https://github.com/mmcgrana/gobyexample"> | <img src="https://github.com/mmcgrana/gobyexample#license">
+					</p>
+				</div>
+			`,
+			expected: []string{"https://gobyexample.com/constants", "https://markmcgranaghan.com", "https://eli.thegreenplace.net", "https://github.com/mmcgrana/gobyexample", "https://github.com/mmcgrana/gobyexample#license"},
+		},
+		{
+			name:     "multiple urls, relative",
+			inputURL: "https://teachyourselfcs.com",
+			inputHTML: `<div>
+					<img class="py2 pr1" height="300" src="sicp.jpg" alt="Structure and Interpretation of Computer Programs">
+					<img class="py2" height="300" src="csapp.jpg" alt="Computer Systems: A Programmer's Perspective">
+					<a href="https://smile.amazon.com/Algorithm-Design-Manual-Steven-Skiena/dp/1848000693/">
+						<img class="py2 pr1" height="300" src="skiena.jpg" alt="The Algorithm Design Manual">
+					</a>
+					<a href="https://smile.amazon.com/How-Solve-Mathematical-Princeton-Science/dp/069116407X/">
+						<img class="py2" height="300" src="polya.jpg" alt="How to Solve It">
+					</a>
+				</div>
+			`,
+			expected: []string{"https://teachyourselfcs.com/sicp.jpg", "https://teachyourselfcs.com/csapp.jpg", "https://teachyourselfcs.com/skiena.jpg", "https://teachyourselfcs.com/polya.jpg"},
+		},
+	}
+
+	for i, tc := range tests {
+		baseURL, err := url.Parse(tc.inputURL)
+		if err != nil {
+			t.Errorf("couldn't parse input URL: %v", err)
+		}
+
+		actual, err := getImagesFromHTML(tc.inputHTML, baseURL)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		if !reflect.DeepEqual(actual, tc.expected) {
+			t.Errorf("Test %v - '%s' FAIL: \nexpected: %v, \nactual: %v", i, tc.name, tc.expected, actual)
+		}
+	}
+}
