@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"net/url"
+	"reflect"
+	"testing"
+)
 
 func TestGetH1FromHTML(t *testing.T) {
 	tests := []struct {
@@ -102,5 +106,70 @@ func TestGetFirstParagraphFromHTMLMainPriority(t *testing.T) {
 				t.Errorf("Test %v - '%s' FAIL: \nexpected: %v, \nactual: %v", i, tc.name, tc.expected, actual)
 			}
 		})
+	}
+}
+
+func TestGetURLsFromHTML(t *testing.T) {
+	tests := []struct {
+		name      string
+		inputURL  string
+		inputHTML string
+		expected  []string
+	}{
+		{
+			name:      "single url, not relative",
+			inputURL:  "https://blog.boot.dev",
+			inputHTML: `<html><body><a href="https://blog.boot.dev"><span>Boot.dev</span></a></body></html>`,
+			expected:  []string{"https://blog.boot.dev"},
+		},
+		{
+			name:     "multiple urls, not relative",
+			inputURL: "https://gobyexample.com/",
+			inputHTML: `<div>
+					<h2><a href="https://gobyexample.com/">Go by Example</a>: Variables</h2>
+					<p class="next">
+						Next example: <a href="https://gobyexample.com/constants" rel="next">Constants</a>.
+					</p>
+					<p class="footer">
+						by <a href="https://markmcgranaghan.com">Mark McGranaghan</a> and <a href="https://eli.thegreenplace.net">Eli Bendersky</a> | <a href="https://github.com/mmcgrana/gobyexample">source</a> | <a href="https://github.com/mmcgrana/gobyexample#license">license</a>
+					</p>
+				</div>
+			`,
+			expected: []string{"https://gobyexample.com", "https://gobyexample.com/constants", "https://markmcgranaghan.com", "https://eli.thegreenplace.net", "https://github.com/mmcgrana/gobyexample", "https://github.com/mmcgrana/gobyexample#license"},
+		},
+		{
+			name:      "single url, relative",
+			inputURL:  "https://blog.boot.dev",
+			inputHTML: `<html><body><a href="./"><span>Boot.dev</span></a></body></html>`,
+			expected:  []string{"https://blog.boot.dev"},
+		},
+		{
+			name:     "multiple urls, relative",
+			inputURL: "https://gobyexample.com/",
+			inputHTML: `<div>
+					<h2><a href="./">Go by Example</a>: Variables</h2>
+					<p class="next">
+						Next example: <a href="/constants" rel="next">Constants</a>.
+					</p>
+				</div>
+			`,
+			expected: []string{"https://gobyexample.com", "https://gobyexample.com/constants"},
+		},
+	}
+
+	for i, tc := range tests {
+		baseURL, err := url.Parse(tc.inputURL)
+		if err != nil {
+			t.Errorf("couldn't parse input URL: %v", err)
+		}
+
+		actual, err := getURLsFromHTML(tc.inputHTML, baseURL)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		if !reflect.DeepEqual(actual, tc.expected) {
+			t.Errorf("Test %v - '%s' FAIL: \nexpected: %v, \nactual: %v", i, tc.name, tc.expected, actual)
+		}
 	}
 }

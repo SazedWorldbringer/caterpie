@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/url"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -41,4 +42,35 @@ func getFirstParagraphFromHTML(html string) string {
 
 	// fallback to find the first p, if main doesn't exist
 	return doc.Find("p").First().Contents().Text()
+}
+
+func getURLsFromHTML(htmlBody string, baseURL *url.URL) ([]string, error) {
+	reader := strings.NewReader(htmlBody)
+
+	doc, err := goquery.NewDocumentFromReader(reader)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	outURLs := []string{}
+
+	doc.Find("a[href]").Each(func(_ int, s *goquery.Selection) {
+		URLStr, _ := s.Attr("href")
+
+		URLVal, err := url.Parse(URLStr)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if URLVal.Scheme == "" {
+			URLVal = baseURL.JoinPath(URLStr)
+		}
+
+		// trim trailing forward slash
+		URLStr = strings.TrimSuffix(URLVal.String(), "/")
+
+		outURLs = append(outURLs, URLStr)
+	})
+
+	return outURLs, nil
 }
