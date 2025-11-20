@@ -24,13 +24,13 @@ func main() {
 	BASE_URL := os.Args[1]
 	fmt.Printf("Starting crawl of: %s\n", BASE_URL)
 
-	// get html from given base url
-	body, err := getHTML(BASE_URL)
-	if err != nil {
-		fmt.Println("Unexpected error in getHTML:", err)
-	}
+	pages := map[string]int{}
 
-	fmt.Println(body)
+	crawlPage(BASE_URL, BASE_URL, pages)
+
+	for page, value := range pages {
+		fmt.Printf("%s - %d\n", page, value)
+	}
 }
 
 func getHTML(rawURL string) (string, error) {
@@ -84,4 +84,50 @@ func getHTML(rawURL string) (string, error) {
 	}
 
 	return string(body), nil
+}
+
+func crawlPage(rawBaseURL, rawCurrentURL string, pages map[string]int) {
+	// check if rawCurrentURL is on the same domain as rawBaseURL
+	// return if not
+	baseURL, err := url.Parse(rawBaseURL)
+	if err != nil {
+		fmt.Println(err)
+	}
+	currentURL, err := url.Parse(rawCurrentURL)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	if strings.Compare(baseURL.Hostname(), currentURL.Hostname()) != 0 {
+		return
+	}
+
+	// check if normalizeURL(rawCurrentURL) is in pages
+	// if yes, increment pages[normalizeURL(rawCurrentURL)]
+	// if no, make pages[normalizeURL(rawCurrentURL)] = 1
+	currentURLstr, err := normalizeURL(currentURL.String())
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	_, ok := pages[currentURLstr]
+	if ok {
+		pages[currentURLstr]++
+		return
+	} else {
+		pages[currentURLstr] = 1
+	}
+
+	// get html for rawCurrentURL and print
+	html, err := getHTML(currentURL.String())
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// get all outgoing links from current html
+	outgoingLinks := extractPageData(html, baseURL.String()).OutgoingLinks
+	for _, link := range outgoingLinks {
+		// recursively crawl each outgoing link
+		crawlPage(rawBaseURL, link, pages)
+	}
 }
