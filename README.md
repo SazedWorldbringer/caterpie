@@ -23,7 +23,6 @@
 ```sh
 go install github.com/SazedWorldbringer/caterpie@latest
 ```
-```
 
 ### Run
 
@@ -38,14 +37,22 @@ This will generate a report.csv in pwd
 ## Development setup
 
 ### Clone the repo
+```sh
 git clone https://github.com/SazedWorldbringer/caterpie
 cd caterpie
+```
 
 ### Run tests
+```sh
 go test ./...
+```
 
 ### Run
+```sh
 go run . https://example.com 10 10
+```
 
 ### Build
+```sh
 go build .
+```
