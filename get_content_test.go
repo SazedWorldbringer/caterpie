@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/url"
 	"reflect"
 	"testing"
@@ -247,7 +248,11 @@ func TestGetImagesFromHTML(t *testing.T) {
 }
 
 func TestExtractPageData(t *testing.T) {
-	inputURL := "https://blog.boot.dev"
+	inputURL, err := url.Parse("https://blog.boot.dev")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	inputBody := `<html><body>
         <h1>Test Title</h1>
         <p>This is the first paragraph.</p>
