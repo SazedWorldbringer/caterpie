@@ -17,6 +17,7 @@ type config struct {
 	mu                 *sync.Mutex
 	concurrencyControl chan struct{}
 	wg                 *sync.WaitGroup
+	maxPages           int
 }
 
 func main() {
@@ -127,6 +128,13 @@ func getHTML(rawURL string) (string, error) {
 func (cfg *config) crawlPage(rawCurrentURL string) {
 	// signal done
 	defer cfg.wg.Done()
+
+	// exit if maxPages reached
+	cfg.mu.Lock()
+	if len(cfg.pages) >= cfg.maxPages {
+		return
+	}
+	cfg.mu.Unlock()
 
 	// check if rawCurrentURL is on the same domain as rawBaseURL
 	// return if not
