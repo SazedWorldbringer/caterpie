@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/url"
 	"strings"
@@ -16,8 +17,8 @@ type PageData struct {
 	ImageURLs      []string
 }
 
-func extractPageData(html, pageURL string) PageData {
-	baseURL, err := url.Parse(pageURL)
+func extractPageData(html string, pageURL *url.URL) PageData {
+	baseURL, err := url.Parse(fmt.Sprintf("%s://%s", pageURL.Scheme, pageURL.Host))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -37,7 +38,7 @@ func extractPageData(html, pageURL string) PageData {
 	}
 
 	return PageData{
-		baseURL.String(),
+		pageURL.String(),
 		h1,
 		firstParagraph,
 		outgoingLinks,
