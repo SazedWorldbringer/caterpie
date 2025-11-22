@@ -47,6 +47,9 @@ func main() {
 	cfg.wg.Add(1)
 	go cfg.crawlPage(rawBase)
 	cfg.wg.Wait()
+
+	// generate csv report of crawled website
+	writeCSVReport(cfg.pages, "report.csv")
 }
 
 func getArgs() (rawBaseURL string, maxConcurrency, maxPages int, err error) {
@@ -156,8 +159,6 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 		return
 	}
 
-	fmt.Println("Current page:", currentURL.String())
-
 	// check if normalizeURL(rawCurrentURL) is in pages
 	normalized, err := normalizeURL(currentURL.String())
 	if err != nil {
@@ -192,8 +193,6 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 
 	// parse page
 	pageData := extractPageData(html, currentURL)
-
-	fmt.Println("Done page: ", currentURL.String())
 
 	cfg.mu.Lock()
 	cfg.pages[normalized] = pageData
