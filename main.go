@@ -76,7 +76,7 @@ func getArgs() (rawBaseURL string, maxConcurrency, maxPages int, err error) {
 		return "", 0, 0, err
 	}
 	if maxPages > 20 {
-		return "", 0, 0, fmt.Errorf("Error: maxPages can only be upto 10")
+		return "", 0, 0, fmt.Errorf("Error: maxPages can only be upto 20")
 	}
 
 	return rawBaseURL, maxConcurrency, maxPages, nil
