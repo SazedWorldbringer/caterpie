@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -21,54 +22,61 @@ type config struct {
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("Error: no website provided")
+	rawBase, maxConcurrency, maxPages, err := getArgs()
+	if err != nil {
+		fmt.Println("Usage: ./crawler URL maxConcurrency maxPages")
+		fmt.Print(err)
 		os.Exit(1)
 	}
-	if len(os.Args) > 2 {
-		fmt.Println("Error: too many arguments provided")
-		os.Exit(1)
-	}
-
-	// exactly 1 argument, base url
-	rawBase := os.Args[1]
-	fmt.Printf("Starting crawl of: %s\n", rawBase)
 
 	parsedBase, err := url.Parse(rawBase)
 	if err != nil {
 		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	cfg := &config{
 		pages:              make(map[string]PageData),
 		baseURL:            parsedBase,
 		mu:                 &sync.Mutex{},
-		concurrencyControl: make(chan struct{}, 10),
+		concurrencyControl: make(chan struct{}, maxConcurrency),
 		wg:                 &sync.WaitGroup{},
+		maxPages:           maxPages,
 	}
 
 	cfg.wg.Add(1)
 	go cfg.crawlPage(rawBase)
 	cfg.wg.Wait()
+}
 
-	cfg.mu.Lock()
-	finalPages := cfg.pages
-	cfg.mu.Unlock()
-
-	for _, page := range finalPages {
-		fmt.Println("URL:", page.URL)
-		fmt.Println("H1:", page.H1)
-		fmt.Println("First Paragraph:", page.FirstParagraph)
-		fmt.Println("Outgoing links:")
-		for i, url := range page.OutgoingLinks {
-			fmt.Println(i, "-", url)
-		}
-		fmt.Println("ImageURLs:")
-		for i, url := range page.ImageURLs {
-			fmt.Println(i, "-", url)
-		}
-		fmt.Println("---")
+func getArgs() (rawBaseURL string, maxConcurrency, maxPages int, err error) {
+	if len(os.Args) < 4 {
+		return "", 0, 0, fmt.Errorf("Error: too few arguments\n")
 	}
+	if len(os.Args) > 4 {
+		return "", 0, 0, fmt.Errorf("Error: too many arguments provided")
+	}
+
+	// argument 1, base url
+	rawBaseURL = os.Args[1]
+	// 2, maxConcurrency
+	maxConcurrency, err = strconv.Atoi(os.Args[2])
+	if err != nil {
+		return "", 0, 0, err
+	}
+	if maxConcurrency > 10 {
+		return "", 0, 0, fmt.Errorf("Error: maxConcurrency can only be upto 10")
+	}
+	// 3, maxPages
+	maxPages, err = strconv.Atoi(os.Args[3])
+	if err != nil {
+		return "", 0, 0, err
+	}
+	if maxPages > 20 {
+		return "", 0, 0, fmt.Errorf("Error: maxPages can only be upto 10")
+	}
+
+	return rawBaseURL, maxConcurrency, maxPages, nil
 }
 
 func getHTML(rawURL string) (string, error) {
@@ -132,6 +140,7 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 	// exit if maxPages reached
 	cfg.mu.Lock()
 	if len(cfg.pages) >= cfg.maxPages {
+		cfg.mu.Unlock()
 		return
 	}
 	cfg.mu.Unlock()
@@ -147,6 +156,8 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 		return
 	}
 
+	fmt.Println("Current page:", currentURL.String())
+
 	// check if normalizeURL(rawCurrentURL) is in pages
 	normalized, err := normalizeURL(currentURL.String())
 	if err != nil {
@@ -160,8 +171,6 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 	}
 	cfg.pages[normalized] = PageData{URL: currentURL.String()}
 	cfg.mu.Unlock()
-
-	// fmt.Println("current: ", normalized)
 
 	// get html for currentURL and store html in pages[currentURLstr]
 	// limit concurrent access
@@ -183,6 +192,8 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 
 	// parse page
 	pageData := extractPageData(html, currentURL)
+
+	fmt.Println("Done page: ", currentURL.String())
 
 	cfg.mu.Lock()
 	cfg.pages[normalized] = pageData
